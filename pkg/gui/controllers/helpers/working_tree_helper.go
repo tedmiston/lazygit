@@ -121,27 +121,29 @@ func (self *WorkingTreeHelper) OpenMergeTool() error {
 }
 
 func (self *WorkingTreeHelper) HandleCommitPressWithMessage(initialMessage string, forceSkipHooks bool) error {
-	return self.WithEnsureCommittableFiles(func() error {
-		self.commitsHelper.OpenCommitMessagePanel(
-			&OpenCommitMessagePanelOpts{
-				CommitIndex:      context.NoCommitIndex,
-				InitialMessage:   initialMessage,
-				SummaryTitle:     self.c.Tr.CommitSummaryTitle,
-				DescriptionTitle: self.c.Tr.CommitDescriptionTitle,
-				PreserveMessage:  true,
-				OnConfirm: func(summary string, description string) error {
+	self.commitsHelper.OpenCommitMessagePanel(
+		&OpenCommitMessagePanelOpts{
+			CommitIndex:      context.NoCommitIndex,
+			InitialMessage:   initialMessage,
+			SummaryTitle:     self.c.Tr.CommitSummaryTitle,
+			DescriptionTitle: self.c.Tr.CommitDescriptionTitle,
+			PreserveMessage:  true,
+			OnConfirm: func(summary string, description string) error {
+				return self.WithEnsureCommittableFiles(func() error {
 					return self.handleCommit(summary, description, forceSkipHooks)
-				},
-				OnSwitchToEditor: func(filepath string) error {
-					return self.switchFromCommitMessagePanelToEditor(filepath, forceSkipHooks)
-				},
-				ForceSkipHooks:  forceSkipHooks,
-				SkipHooksPrefix: self.c.UserConfig().Git.SkipHookPrefix,
+				})
 			},
-		)
+			OnSwitchToEditor: func(filepath string) error {
+				return self.WithEnsureCommittableFiles(func() error {
+					return self.switchFromCommitMessagePanelToEditor(filepath, forceSkipHooks)
+				})
+			},
+			ForceSkipHooks:  forceSkipHooks,
+			SkipHooksPrefix: self.c.UserConfig().Git.SkipHookPrefix,
+		},
+	)
 
-		return nil
-	})
+	return nil
 }
 
 func (self *WorkingTreeHelper) handleCommit(summary string, description string, forceSkipHooks bool) error {

@@ -6,12 +6,12 @@ import (
 )
 
 var PreserveCommitMessage = NewIntegrationTest(NewIntegrationTestArgs{
-	Description:  "Test that the commit message is preserved correctly when canceling the commit message panel",
+	Description:  "Test that commit messages can be drafted and preserved before staging files",
 	ExtraCmdArgs: []string{},
 	Skip:         false,
 	SetupConfig:  func(config *config.AppConfig) {},
 	SetupRepo: func(shell *Shell) {
-		shell.CreateFileAndAdd("myfile", "myfile content")
+		shell.CreateFile("myfile", "myfile content")
 	},
 	Run: func(t *TestDriver, keys config.KeybindingConfig) {
 		t.Views().Files().
@@ -47,6 +47,8 @@ var PreserveCommitMessage = NewIntegrationTest(NewIntegrationTestArgs{
 
 		t.Views().Files().
 			IsFocused().
+			NavigateToLine(Contains("myfile")).
+			PressPrimaryAction().
 			Press(keys.Files.CommitChanges)
 
 		t.ExpectPopup().CommitMessagePanel().
